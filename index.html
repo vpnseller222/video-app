@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>All Video PLAY 🔞</title>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: #f8fafc; font-family: 'Hind Siliguri', sans-serif; margin: 0; padding: 0; }
+        
+        /* ওপরের গ্রেডিয়েন্ট হেডার */
+        .header { background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%); color: white; padding: 45px 20px; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; text-align: center; }
+        .header h1 { font-size: 26px; margin: 0; font-weight: 700; }
+        .header p { font-size: 14px; opacity: 0.9; margin-top: 10px; line-height: 1.5; }
+
+        /* সার্চ বক্স ডিজাইন */
+        .search-area { position: relative; max-width: 90%; margin: -30px auto 25px; }
+        .search-input { width: 100%; padding: 18px 20px 18px 55px; border-radius: 50px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-size: 16px; outline: none; background: white; }
+        .search-icon { position: absolute; left: 22px; top: 18px; color: #94a3b8; font-size: 18px; }
+
+        /* ভিডিও কার্ড সেকশন */
+        .container { padding: 0 20px 40px; }
+        .section-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; text-align: left; border-left: 5px solid #4f46e5; padding-left: 10px; color: #1e293b; }
+        
+        /* ভিডিও কার্ড */
+        .video-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #e2e8f0; }
+        .thumb-box { width: 100%; height: 210px; background: #e2e8f0; position: relative; }
+        .thumb-img { width: 100%; height: 100%; object-fit: cover; }
+        .card-details { padding: 18px; text-align: left; }
+        .v-title { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 5px; }
+        .v-info { font-size: 13px; color: #64748b; margin-bottom: 15px; display: flex; align-items: center; gap: 4px; }
+
+        /* বাটন স্টাইল */
+        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
+        .unlock-btn { background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); color: white; }
+        .download-btn { background: linear-gradient(90deg, #10b981 0%, #059669 100%); color: white; box-shadow: 0 5px 15px rgba(16, 185, 129, 0.2); }
+
+        /* অ্যাড মোডাল */
+        #ad-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 320px; padding: 35px 20px; border-radius: 25px; text-align: center; }
+        .timer-val { font-size: 45px; font-weight: 700; color: #4f46e5; margin-bottom: 15px; }
+        .modal-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1e293b; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>All Video PLAY 🔞</h1>
+        <p>বিজ্ঞাপন দেখুন, আনলক করুন এবং বিনামূল্যে ফাইল ডাউনলোড করুন যা আপনার ইনবক্সে চলে যাবে অটো।</p>
+    </div>
+
+    <div class="search-area">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" placeholder="ফাইলের জন্য অনুসন্ধান করুন...">
+    </div>
+
+    <div class="container">
+        <h2 class="section-title">উপলব্ধ ফাইল</h2>
+        <div id="video-display">ডেটা লোড হচ্ছে...</div>
+    </div>
+
+    <div id="ad-modal">
+        <div class="modal-content">
+            <div class="timer-val" id="countdown-val">10</div>
+            <p id="step-msg" class="modal-text">দয়া করে অপেক্ষা করুন...</p>
+            <button id="next-ad-btn" class="btn unlock-btn" style="display:none;">অ্যাড দেখুন</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://myvideobot-9f9ee-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref('videos');
+
+        let adStep = 1;
+        let totalAdsCount = 0;
+        let adLinks = [];
+        let currentKey = "";
+
+        db.on('value', (snapshot) => {
+            const data = snapshot.val();
+            let display = document.getElementById('video-display');
+            display.innerHTML = "";
+            
+            for(let key in data) {
+                let adsCount = data[key].ads.length;
+                display.innerHTML += `
+                    <div class="video-card">
+                        <div class="thumb-box">
+                            <img class="thumb-img" src="https://api.telegram.org/file/bot8558070193:AAFwpxEri3p7XJW-lB8eWHdDWv0K6R6TKcA/${data[key].photo}">
+                        </div>
+                        <div class="card-details">
+                            <div class="v-title">${data[key].name}</div>
+                            <div class="v-info">🔞 ${adsCount} টা Ads দেখো আর ভিডিও দেখো</div>
+                            <button id="btn-${key}" class="btn unlock-btn" onclick="openAdWindow('${key}', ${JSON.stringify(data[key].ads)})">
+                                🔒 আনলক করুন (0/${adsCount})
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        function openAdWindow(key, ads) {
+            currentKey = key;
+            adLinks = ads;
+            totalAdsCount = ads.length;
+            adStep = 1;
+            document.getElementById('ad-modal').style.display = 'flex';
+            startTimer();
+        }
+
+        function startTimer() {
+            let timeLeft = 10;
+            let btn = document.getElementById('next-ad-btn');
+            let timerTxt = document.getElementById('countdown-val');
+            let msgTxt = document.getElementById('step-msg');
+
+            btn.style.display = 'none';
+            msgTxt.innerText = `ধাপ ${adStep}: অপেক্ষা করুন...`;
+
+            let clock = setInterval(() => {
+                timerTxt.innerText = timeLeft;
+                if(timeLeft <= 0) {
+                    clearInterval(clock);
+                    timerTxt.innerText = "✓";
+                    msgTxt.innerText = "অ্যাড দেখার জন্য নিচে ক্লিক করুন";
+                    btn.style.display = 'flex';
+                    btn.innerText = `বিজ্ঞাপন ${adStep} দেখুন`;
+                    
+                    btn.onclick = () => {
+                        window.open(adLinks[adStep-1], '_blank');
+                        if(adStep < totalAdsCount) {
+                            adStep++;
+                            startTimer();
+                        } else {
+                            finishUnlock();
+                        }
+                    };
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        function finishUnlock() {
+            document.getElementById('ad-modal').style.display = 'none';
+            let mainBtn = document.getElementById(`btn-${currentKey}`);
+            mainBtn.innerHTML = "📥 Download Video (ইনবক্সে পান)";
+            mainBtn.className = "btn download-btn";
+            mainBtn.onclick = () => {
+                window.location.href = `https://t.me/vairal_video18_bot?start=${currentKey}`;
+            };
+        }
+    </script>
+</body>
+</html>
