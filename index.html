@@ -9,42 +9,48 @@
     <style>
         :root { --main-grad: linear-gradient(135deg, #8e2de2, #4a00e0); --bg: #f8f9fa; }
         body { background: var(--bg); color: #333; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-        .header-section { background: var(--main-grad); padding: 40px 20px; text-align: center; color: white; border-radius: 0 0 35px 35px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .header-section h1 { margin: 0; font-size: 26px; font-weight: bold; }
-        .header-desc { font-size: 14px; margin-top: 10px; opacity: 0.9; line-height: 1.4; padding: 0 10px; }
-        .search-area { margin: -25px 25px 20px 25px; }
-        .search-input { width: 100%; padding: 15px 20px; border-radius: 50px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-size: 16px; outline: none; box-sizing: border-box; }
+        .header-section { background: var(--main-grad); padding: 40px 20px; text-align: center; color: white; border-radius: 0 0 35px 35px; }
+        .header-section h1 { margin: 0; font-size: 26px; }
+        .header-desc { font-size: 13px; margin-top: 10px; opacity: 0.9; }
         .main-content { padding: 15px; }
-        .card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .thumb-box { width: 100%; height: 210px; background: #ddd; }
+        .card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .thumb-box { width: 100%; height: 210px; }
         .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
         .card-details { padding: 15px; text-align: center; }
-        .card-details h3 { margin: 5px 0 15px 0; font-size: 18px; color: #222; }
         .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        
-        /* Ad Overlay */
-        #ad-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .timer-circle { width: 90px; height: 90px; border: 6px solid #4a00e0; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: bold; color: #4a00e0; margin-bottom: 20px; }
-        .ad-go-btn { background: #0088cc; color: white; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .download-btn { background: #28a745 !important; }
+        .ad-counter { display: block; margin-top: 8px; font-size: 14px; font-weight: bold; color: #666; }
+
+        /* Telegram Style Full Ad View */
+        #ad-view-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 100000; flex-direction: column; }
+        #ad-frame { width: 100%; height: calc(100% - 60px); border: none; }
+        .ad-footer-timer { 
+            height: 60px; background: rgba(255,255,255,0.95); 
+            display: flex; justify-content: center; align-items: center; 
+            border-top: 1px solid #ddd; position: absolute; bottom: 0; width: 100%;
+            font-weight: bold; color: #4a00e0; font-size: 16px;
+        }
+        .close-ad-btn { 
+            background: #4a00e0; color: white; border: none; 
+            padding: 8px 20px; border-radius: 5px; display: none; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
     <div class="header-section">
         <h1>All Video PLAY 🔞</h1>
-        <p class="header-desc">অ্যাড দেখে ভিডিওটি আনলক করলে ভিডিওটি সরাসরি আপনার বটের ইনবক্সে চলে যাবে।</p>
+        <p class="header-desc">নিচের সব ধাপ সম্পন্ন হলে ভিডিও ইনবক্সে পাবেন।</p>
     </div>
 
-    <div class="search-area">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 ভিডিও খুঁজুন..." onkeyup="searchVideos()">
-    </div>
+    <div class="main-content" id="video-display">লোডিং...</div>
 
-    <div class="main-content" id="video-display">লোডিং হচ্ছে...</div>
-
-    <div id="ad-view">
-        <div class="timer-circle" id="timer">10</div>
-        <p id="ad-msg" style="padding: 0 30px; font-size: 17px; color: #444;">দয়া করে কিছুক্ষণ অপেক্ষা করুন...</p>
-        <a href="#" id="ad-go-btn" class="ad-go-btn" target="_blank">বিজ্ঞাপনটি দেখুন</a>
+    <div id="ad-view-container">
+        <iframe id="ad-frame" src=""></iframe>
+        <div class="ad-footer-timer">
+            <span id="timer-text">অপেক্ষা করুন: <span id="seconds">10</span> সে.</span>
+            <button id="close-btn" class="close-ad-btn" onclick="closeAdView()">ধাপ সম্পন্ন (ফিরে যান)</button>
+        </div>
     </div>
 
     <script>
@@ -53,6 +59,9 @@
         const db = firebase.database();
 
         let allVideos = {};
+        let currentAds = [];
+        let v_id = "";
+        let completedSteps = 0;
 
         db.ref('videos').on('value', (snap) => {
             allVideos = snap.val();
@@ -62,66 +71,66 @@
         function renderVideos(data) {
             const container = document.getElementById('video-display');
             container.innerHTML = "";
-            if(!data) { container.innerHTML = "কোনো ভিডিও পাওয়া যায়নি।"; return; }
             for (let id in data) {
+                const total = data[id].ads ? data[id].ads.length : 0;
                 container.innerHTML += `
                     <div class="card">
-                        <div class="thumb-box">
-                            <img src="${data[id].photo}" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
-                        </div>
+                        <div class="thumb-box"><img src="${data[id].photo}"></div>
                         <div class="card-details">
                             <h3>${data[id].name}</h3>
-                            <button class="unlock-btn" onclick="openAd('${id}', ${JSON.stringify(data[id].ads)})">🔒 UNLOCK VIDEO</button>
+                            <button id="btn-${id}" class="unlock-btn" onclick='startAdFlow("${id}", ${JSON.stringify(data[id].ads)})'>🔒 UNLOCK VIDEO</button>
+                            <span id="counter-${id}" class="ad-counter">ধাপ সম্পন্ন: 0/${total}</span>
                         </div>
                     </div>`;
             }
         }
 
-        function searchVideos() {
-            let input = document.getElementById('searchInput').value.toLowerCase();
-            let filtered = {};
-            for (let id in allVideos) {
-                if (allVideos[id].name.toLowerCase().includes(input)) filtered[id] = allVideos[id];
+        function startAdFlow(id, ads) {
+            v_id = id; currentAds = ads;
+            if (completedSteps >= currentAds.length) {
+                window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id;
+                return;
             }
-            renderVideos(filtered);
+            openAdView();
         }
 
-        let ads = []; let v_id = ""; let step = 0;
-        function openAd(id, adList) {
-            v_id = id; ads = adList; step = 0;
-            document.getElementById('ad-view').style.display = 'flex';
-            showAdStep();
-        }
-
-        function showAdStep() {
-            document.getElementById('ad-go-btn').style.display = 'none';
-            let time = 10;
-            const timerObj = document.getElementById('timer');
-            const msgObj = document.getElementById('ad-msg');
-            msgObj.innerText = "দয়া করে কিছুক্ষণ অপেক্ষা করুন...";
+        function openAdView() {
+            document.getElementById('ad-view-container').style.display = 'flex';
+            document.getElementById('ad-frame').src = currentAds[completedSteps];
+            document.getElementById('close-btn').style.display = 'none';
+            document.getElementById('timer-text').style.display = 'block';
             
-            const interval = setInterval(() => {
-                timerObj.innerText = time;
-                if (time <= 0) {
-                    clearInterval(interval);
-                    msgObj.innerText = "নিচের বাটনে ক্লিক করে বিজ্ঞাপনটি দেখুন";
-                    const btn = document.getElementById('ad-go-btn');
-                    btn.style.display = 'block';
-                    btn.href = ads[step];
-                    btn.onclick = () => {
-                        step++;
-                        if (step < ads.length) { 
-                            setTimeout(showAdStep, 1000); 
-                        } else { 
-                            msgObj.innerText = "ভিডিও আনলক হয়েছে! ফিরে যান...";
-                            setTimeout(() => { 
-                                window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id; 
-                            }, 2000);
-                        }
-                    };
+            let t = 10;
+            const sec = document.getElementById('seconds');
+            const itv = setInterval(() => {
+                sec.innerText = t;
+                if(t <= 0) {
+                    clearInterval(itv);
+                    document.getElementById('timer-text').style.display = 'none';
+                    document.getElementById('close-btn').style.display = 'block';
                 }
-                time--;
+                t--;
             }, 1000);
+        }
+
+        function closeAdView() {
+            completedSteps++;
+            document.getElementById('ad-view-container').style.display = 'none';
+            updateUI();
+        }
+
+        function updateUI() {
+            const count = document.getElementById(`counter-${v_id}`);
+            const btn = document.getElementById(`btn-${v_id}`);
+            count.innerText = `ধাপ সম্পন্ন: ${completedSteps}/${currentAds.length}`;
+            if (completedSteps >= currentAds.length) {
+                btn.innerText = "📥 GET VIDEO (DOWNLOAD)";
+                btn.classList.add("download-btn");
+                count.style.color = "#28a745";
+                count.innerText = "✅ সব ধাপ সম্পন্ন!";
+            } else {
+                btn.innerText = "🔓 UNLOCK NEXT STEP";
+            }
         }
     </script>
 </body>
