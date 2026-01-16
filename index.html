@@ -8,40 +8,42 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --main-grad: linear-gradient(135deg, #8e2de2, #4a00e0); --bg: #f8f9fa; }
-        body { background: var(--bg); color: #333; font-family: sans-serif; margin: 0; padding: 0; }
-        .header-section { background: var(--main-grad); padding: 50px 20px; text-align: center; color: white; border-radius: 0 0 40px 40px; }
-        .header-section h1 { margin: 0; font-size: 28px; }
-        .search-area { margin: -30px 25px 25px 25px; }
-        .search-input { width: 100%; padding: 15px 20px; border-radius: 50px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-size: 16px; box-sizing: border-box; outline: none; }
-        .main-content { padding: 20px; }
+        body { background: var(--bg); color: #333; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        .header-section { background: var(--main-grad); padding: 40px 20px; text-align: center; color: white; border-radius: 0 0 35px 35px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .header-section h1 { margin: 0; font-size: 26px; font-weight: bold; }
+        .header-desc { font-size: 14px; margin-top: 10px; opacity: 0.9; line-height: 1.4; padding: 0 10px; }
+        .search-area { margin: -25px 25px 20px 25px; }
+        .search-input { width: 100%; padding: 15px 20px; border-radius: 50px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-size: 16px; outline: none; box-sizing: border-box; }
+        .main-content { padding: 15px; }
         .card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .thumb-box { width: 100%; height: 200px; }
+        .thumb-box { width: 100%; height: 210px; background: #ddd; }
         .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-        .card-details { padding: 15px; }
-        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .card-details { padding: 15px; text-align: center; }
+        .card-details h3 { margin: 5px 0 15px 0; font-size: 18px; color: #222; }
+        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; }
         
         /* Ad Overlay */
         #ad-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .timer-circle { width: 100px; height: 100px; border: 5px solid #4a00e0; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 35px; font-weight: bold; color: #4a00e0; margin-bottom: 20px; }
-        .ad-go-btn { background: #0088cc; color: white; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; display: none; }
+        .timer-circle { width: 90px; height: 90px; border: 6px solid #4a00e0; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: bold; color: #4a00e0; margin-bottom: 20px; }
+        .ad-go-btn { background: #0088cc; color: white; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
     <div class="header-section">
         <h1>All Video PLAY 🔞</h1>
-        <p>ভিডিও সরাসরি ইনবক্সে পান।</p>
+        <p class="header-desc">অ্যাড দেখে ভিডিওটি আনলক করলে ভিডিওটি সরাসরি আপনার বটের ইনবক্সে চলে যাবে।</p>
     </div>
 
     <div class="search-area">
-        <input type="text" class="search-input" placeholder="🔍 ভিডিওর জন্য অনুসন্ধান করুন...">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 ভিডিও খুঁজুন..." onkeyup="searchVideos()">
     </div>
 
-    <div class="main-content" id="video-display">লোডিং...</div>
+    <div class="main-content" id="video-display">লোডিং হচ্ছে...</div>
 
     <div id="ad-view">
         <div class="timer-circle" id="timer">10</div>
-        <p id="ad-msg" style="padding: 0 20px;">বিজ্ঞাপন লোড হচ্ছে...</p>
+        <p id="ad-msg" style="padding: 0 30px; font-size: 17px; color: #444;">দয়া করে কিছুক্ষণ অপেক্ষা করুন...</p>
         <a href="#" id="ad-go-btn" class="ad-go-btn" target="_blank">বিজ্ঞাপনটি দেখুন</a>
     </div>
 
@@ -50,10 +52,17 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let allVideos = {};
+
         db.ref('videos').on('value', (snap) => {
-            const data = snap.val();
+            allVideos = snap.val();
+            renderVideos(allVideos);
+        });
+
+        function renderVideos(data) {
             const container = document.getElementById('video-display');
             container.innerHTML = "";
+            if(!data) { container.innerHTML = "কোনো ভিডিও পাওয়া যায়নি।"; return; }
             for (let id in data) {
                 container.innerHTML += `
                     <div class="card">
@@ -62,25 +71,34 @@
                         </div>
                         <div class="card-details">
                             <h3>${data[id].name}</h3>
-                            <button class="unlock-btn" onclick="openAd('${id}', ${JSON.stringify(data[id].ads)})">🔒 আনলক করুন</button>
+                            <button class="unlock-btn" onclick="openAd('${id}', ${JSON.stringify(data[id].ads)})">🔒 UNLOCK VIDEO</button>
                         </div>
                     </div>`;
             }
-        });
+        }
+
+        function searchVideos() {
+            let input = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = {};
+            for (let id in allVideos) {
+                if (allVideos[id].name.toLowerCase().includes(input)) filtered[id] = allVideos[id];
+            }
+            renderVideos(filtered);
+        }
 
         let ads = []; let v_id = ""; let step = 0;
         function openAd(id, adList) {
             v_id = id; ads = adList; step = 0;
-            showAdScreen();
+            document.getElementById('ad-view').style.display = 'flex';
+            showAdStep();
         }
 
-        function showAdScreen() {
-            document.getElementById('ad-view').style.display = 'flex';
+        function showAdStep() {
             document.getElementById('ad-go-btn').style.display = 'none';
             let time = 10;
             const timerObj = document.getElementById('timer');
             const msgObj = document.getElementById('ad-msg');
-            msgObj.innerText = "বিজ্ঞাপন লোড হচ্ছে...";
+            msgObj.innerText = "দয়া করে কিছুক্ষণ অপেক্ষা করুন...";
             
             const interval = setInterval(() => {
                 timerObj.innerText = time;
@@ -93,9 +111,9 @@
                     btn.onclick = () => {
                         step++;
                         if (step < ads.length) { 
-                            setTimeout(showAdScreen, 1500); 
+                            setTimeout(showAdStep, 1000); 
                         } else { 
-                            msgObj.innerText = "ভিডিও আনলক হয়েছে!";
+                            msgObj.innerText = "ভিডিও আনলক হয়েছে! ফিরে যান...";
                             setTimeout(() => { 
                                 window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id; 
                             }, 2000);
