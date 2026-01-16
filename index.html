@@ -10,48 +10,33 @@
         :root { --main-grad: linear-gradient(135deg, #8e2de2, #4a00e0); --bg: #f8f9fa; }
         body { background: var(--bg); color: #333; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
         .header-section { background: var(--main-grad); padding: 40px 20px; text-align: center; color: white; border-radius: 0 0 35px 35px; }
-        .header-section h1 { margin: 0; font-size: 26px; }
-        .header-desc { font-size: 13px; margin-top: 10px; opacity: 0.9; }
+        .header-section p { font-size: 14px; line-height: 1.6; margin: 10px 0 0; opacity: 0.9; }
         .main-content { padding: 15px; }
         .card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .thumb-box { width: 100%; height: 210px; }
         .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
         .card-details { padding: 15px; text-align: center; }
-        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
         .download-btn { background: #28a745 !important; }
         .ad-counter { display: block; margin-top: 8px; font-size: 14px; font-weight: bold; color: #666; }
-
-        /* Telegram Style Full Ad View */
-        #ad-view-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 100000; flex-direction: column; }
-        #ad-frame { width: 100%; height: calc(100% - 60px); border: none; }
-        .ad-footer-timer { 
-            height: 60px; background: rgba(255,255,255,0.95); 
-            display: flex; justify-content: center; align-items: center; 
-            border-top: 1px solid #ddd; position: absolute; bottom: 0; width: 100%;
-            font-weight: bold; color: #4a00e0; font-size: 16px;
-        }
-        .close-ad-btn { 
-            background: #4a00e0; color: white; border: none; 
-            padding: 8px 20px; border-radius: 5px; display: none; cursor: pointer;
-        }
+        #loading-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.98); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4a00e0; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p id="loading-text" style="margin-top:15px; font-weight:bold; color: #4a00e0;">চেক করা হচ্ছে...</p>
+    </div>
+
     <div class="header-section">
         <h1>All Video PLAY 🔞</h1>
-        <p class="header-desc">নিচের সব ধাপ সম্পন্ন হলে ভিডিও ইনবক্সে পাবেন।</p>
+        <p>ভিডিওটি আনলক করলে ২৪ ঘণ্টা ফ্রি দেখতে পারবেন। <br><b>সতর্কতা:</b> প্রতিটা অ্যাড এ মিনিমাম ১০ সেকেন্ড অপেক্ষা করতে হবে, না হলে কাউন্ট হবে না।</p>
     </div>
 
     <div class="main-content" id="video-display">লোডিং...</div>
-
-    <div id="ad-view-container">
-        <iframe id="ad-frame" src=""></iframe>
-        <div class="ad-footer-timer">
-            <span id="timer-text">অপেক্ষা করুন: <span id="seconds">10</span> সে.</span>
-            <button id="close-btn" class="close-ad-btn" onclick="closeAdView()">ধাপ সম্পন্ন (ফিরে যান)</button>
-        </div>
-    </div>
 
     <script>
         const firebaseConfig = { databaseURL: "https://myvideobot-9f9ee-default-rtdb.firebaseio.com/" };
@@ -59,79 +44,78 @@
         const db = firebase.database();
 
         let allVideos = {};
-        let currentAds = [];
-        let v_id = "";
-        let completedSteps = 0;
+
+        function getCurrentStep(v_id) {
+            const expiry = localStorage.getItem('expiry_' + v_id);
+            if (expiry && Date.now() > parseInt(expiry)) {
+                localStorage.removeItem('step_' + v_id);
+                localStorage.removeItem('expiry_' + v_id);
+                return 0;
+            }
+            return parseInt(localStorage.getItem('step_' + v_id)) || 0;
+        }
 
         db.ref('videos').on('value', (snap) => {
             allVideos = snap.val();
-            renderVideos(allVideos);
+            renderUI();
         });
 
-        function renderVideos(data) {
+        function renderUI() {
             const container = document.getElementById('video-display');
             container.innerHTML = "";
-            for (let id in data) {
-                const total = data[id].ads ? data[id].ads.length : 0;
+            for (let id in allVideos) {
+                const ads = allVideos[id].ads || [];
+                const step = getCurrentStep(id);
+                const total = ads.length;
+                let btnTxt = step >= total ? "📥 GET VIDEO (DOWNLOAD)" : (step > 0 ? "🔓 UNLOCK NEXT AD" : "🔒 UNLOCK VIDEO");
+                let btnClass = step >= total ? "unlock-btn download-btn" : "unlock-btn";
                 container.innerHTML += `
                     <div class="card">
-                        <div class="thumb-box"><img src="${data[id].photo}"></div>
+                        <div class="thumb-box"><img src="${allVideos[id].photo}"></div>
                         <div class="card-details">
-                            <h3>${data[id].name}</h3>
-                            <button id="btn-${id}" class="unlock-btn" onclick='startAdFlow("${id}", ${JSON.stringify(data[id].ads)})'>🔒 UNLOCK VIDEO</button>
-                            <span id="counter-${id}" class="ad-counter">ধাপ সম্পন্ন: 0/${total}</span>
+                            <h3>${allVideos[id].name}</h3>
+                            <button class="${btnClass}" onclick='handleAdClick("${id}", ${JSON.stringify(ads)})'>${btnTxt}</button>
+                            <span class="ad-counter">${step >= total ? '✅ ২৪ ঘণ্টা আনলক থাকবে' : 'অ্যাড সম্পন্ন: ' + step + '/' + total}</span>
                         </div>
                     </div>`;
             }
         }
 
-        function startAdFlow(id, ads) {
-            v_id = id; currentAds = ads;
-            if (completedSteps >= currentAds.length) {
+        function handleAdClick(v_id, ads) {
+            let step = getCurrentStep(v_id);
+            if (step >= ads.length) {
+                localStorage.setItem('expiry_' + v_id, Date.now() + (24 * 60 * 60 * 1000));
                 window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id;
                 return;
             }
-            openAdView();
+            localStorage.setItem('waiting_v_id', v_id);
+            localStorage.setItem('click_time', Date.now());
+            window.open(ads[step], '_blank');
         }
 
-        function openAdView() {
-            document.getElementById('ad-view-container').style.display = 'flex';
-            document.getElementById('ad-frame').src = currentAds[completedSteps];
-            document.getElementById('close-btn').style.display = 'none';
-            document.getElementById('timer-text').style.display = 'block';
-            
-            let t = 10;
-            const sec = document.getElementById('seconds');
-            const itv = setInterval(() => {
-                sec.innerText = t;
-                if(t <= 0) {
-                    clearInterval(itv);
-                    document.getElementById('timer-text').style.display = 'none';
-                    document.getElementById('close-btn').style.display = 'block';
+        function autoCheck() {
+            const v_id = localStorage.getItem('waiting_v_id');
+            const clickTime = localStorage.getItem('click_time');
+            if (v_id && clickTime) {
+                const timeDiff = Date.now() - parseInt(clickTime);
+                localStorage.removeItem('waiting_v_id');
+                localStorage.removeItem('click_time');
+                document.getElementById('loading-screen').style.display = 'flex';
+                if (timeDiff >= 10000) {
+                    setTimeout(() => {
+                        let step = getCurrentStep(v_id);
+                        step++;
+                        localStorage.setItem('step_' + v_id, step);
+                        document.getElementById('loading-screen').style.display = 'none';
+                        renderUI();
+                    }, 2000);
+                } else {
+                    document.getElementById('loading-text').innerHTML = "<span style='color:red;'>ভুল!</span> আপনি ১০ সেকেন্ড অপেক্ষা করেননি।";
+                    setTimeout(() => { document.getElementById('loading-screen').style.display = 'none'; }, 3000);
                 }
-                t--;
-            }, 1000);
-        }
-
-        function closeAdView() {
-            completedSteps++;
-            document.getElementById('ad-view-container').style.display = 'none';
-            updateUI();
-        }
-
-        function updateUI() {
-            const count = document.getElementById(`counter-${v_id}`);
-            const btn = document.getElementById(`btn-${v_id}`);
-            count.innerText = `ধাপ সম্পন্ন: ${completedSteps}/${currentAds.length}`;
-            if (completedSteps >= currentAds.length) {
-                btn.innerText = "📥 GET VIDEO (DOWNLOAD)";
-                btn.classList.add("download-btn");
-                count.style.color = "#28a745";
-                count.innerText = "✅ সব ধাপ সম্পন্ন!";
-            } else {
-                btn.innerText = "🔓 UNLOCK NEXT STEP";
             }
         }
+        window.onfocus = autoCheck;
     </script>
 </body>
 </html>
