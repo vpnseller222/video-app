@@ -3,31 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAIRAL VIDEO - Anti Reload Timer</title>
+    <title>VAIRAL VIDEO - Premium Panel</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --main-grad: linear-gradient(135deg, #8e2de2, #4a00e0); --bg: #f4f7f6; }
         body { background: var(--bg); color: #333; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-        .header-section { background: var(--main-grad); padding: 35px 20px 50px; text-align: center; color: white; border-radius: 0 0 40px 40px; }
-        .search-container { padding: 0 20px; margin-top: -25px; }
-        .search-box { width: 100%; padding: 15px; border-radius: 15px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-size: 16px; outline: none; box-sizing: border-box; }
-        .main-content { padding: 20px 15px; }
-        .card { background: white; border-radius: 22px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-        .thumb-box { width: 100%; height: 200px; }
+        
+        /* হেডার ও ক্যাটাগরি বার */
+        .header-section { background: var(--main-grad); padding: 30px 20px 45px; text-align: center; color: white; border-radius: 0 0 35px 35px; }
+        .category-bar { display: flex; justify-content: space-around; padding: 10px 15px; background: white; margin: -20px 15px 10px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: sticky; top: 10px; z-index: 100; gap: 5px; }
+        .cat-btn { flex: 1; padding: 10px 5px; border-radius: 10px; border: 1px solid #8e2de2; background: white; color: #4a00e0; font-weight: bold; cursor: pointer; font-size: 11px; white-space: nowrap; transition: 0.3s; }
+        .cat-btn.active { background: var(--main-grad); color: white; border: none; }
+
+        .search-container { padding: 10px 20px; }
+        .search-box { width: 100%; padding: 12px; border-radius: 12px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); font-size: 15px; outline: none; box-sizing: border-box; }
+
+        .main-content { padding: 10px 15px; }
+        .card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+        .thumb-box { width: 100%; height: 190px; background: #eee; }
         .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-        .card-details { padding: 18px; text-align: center; }
-        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 14px; width: 100%; border-radius: 14px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .card-details { padding: 15px; text-align: center; }
+        
+        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 15px; }
         .unlock-btn:disabled { background: #95a5a6; cursor: not-allowed; }
         .download-btn { background: #2ecc71 !important; }
         
-        /* ফ্লোটিং টাইমার */
-        #timer-overlay {
-            display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9); color: white; padding: 15px 25px; border-radius: 50px;
-            z-index: 10000; font-weight: bold; text-align: center; width: 85%; max-width: 320px;
-        }
-        .progress-bar { width: 100%; height: 6px; background: #444; margin-top: 10px; border-radius: 10px; overflow: hidden; }
+        /* রিলোড-প্রুফ টাইমার ওভারলে */
+        #timer-overlay { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 20px; border-radius: 50px; z-index: 10000; font-weight: bold; text-align: center; width: 85%; max-width: 300px; }
+        .progress-bar { width: 100%; height: 5px; background: #444; margin-top: 8px; border-radius: 10px; overflow: hidden; }
         #bar-fill { width: 0%; height: 100%; background: #2ecc71; transition: 0.3s; }
     </style>
 </head>
@@ -39,8 +43,14 @@
     </div>
 
     <div class="header-section">
-        <h1>All Video PLAY 🔞</h1>
-        <p>অ্যাডে ক্লিক করে ১০ সেকেন্ড অপেক্ষা করুন।</p>
+        <h2 style="margin:0;">VAIRAL VIDEO PLAY 🔞</h2>
+    </div>
+
+    <div class="category-bar">
+        <button class="cat-btn active" onclick="filterCat('All', this)">All</button>
+        <button class="cat-btn" onclick="filterCat('18+ Video🔞', this)">18+ Video🔞</button>
+        <button class="cat-btn" onclick="filterCat('All Natok', this)">All Natok</button>
+        <button class="cat-btn" onclick="filterCat('All Movi', this)">All Movi</button>
     </div>
 
     <div class="search-container">
@@ -55,6 +65,7 @@
         const db = firebase.database();
 
         let allVideos = {};
+        let currentCategory = "All";
         let timerInterval = null;
 
         function getCurrentStep(v_id) {
@@ -70,27 +81,39 @@
         db.ref('videos').on('value', (snap) => {
             allVideos = snap.val();
             renderUI();
-            checkExistingTimer(); // পেজ লোড বা রিলোড হলে চেক করবে টাইমার চলছে কি না
+            checkExistingTimer();
         });
+
+        function filterCat(cat, btn) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderUI();
+        }
 
         function renderUI() {
             const container = document.getElementById('video-display');
             const searchInput = document.getElementById('videoSearch').value.toLowerCase();
             container.innerHTML = "";
+            
             for (let id in allVideos) {
-                if (!allVideos[id].name.toLowerCase().includes(searchInput)) continue;
-                const ads = allVideos[id].ads || [];
+                const v = allVideos[id];
+                if (!v.name.toLowerCase().includes(searchInput)) continue;
+                if (currentCategory !== "All" && v.category !== currentCategory) continue;
+
+                const ads = v.ads || [];
                 const step = getCurrentStep(id);
                 const total = ads.length;
                 let btnTxt = step >= total ? "📥 GET VIDEO (DOWNLOAD)" : (step > 0 ? "🔓 UNLOCK NEXT AD" : "🔒 UNLOCK VIDEO");
                 let btnClass = step >= total ? "unlock-btn download-btn" : "unlock-btn";
+                
                 container.innerHTML += `
                     <div class="card">
-                        <div class="thumb-box"><img src="${allVideos[id].photo}"></div>
+                        <div class="thumb-box"><img src="${v.photo}"></div>
                         <div class="card-details">
-                            <h3>${allVideos[id].name}</h3>
+                            <h3 style="margin:0 0 10px; font-size:17px;">${v.name}</h3>
                             <button id="btn-${id}" class="${btnClass}" onclick='handleAdClick("${id}", ${JSON.stringify(ads)})'>${btnTxt}</button>
-                            <span class="ad-counter">${step >= total ? '✅ আনলক সফল' : 'ধাপ: ' + step + '/' + total}</span>
+                            <span style="display:block; margin-top:8px; font-size:12px; color:#777;">ধাপ: ${step}/${total} | ${v.category || 'Uncategorized'}</span>
                         </div>
                     </div>`;
             }
@@ -103,25 +126,18 @@
                 window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id;
                 return;
             }
-
             if (localStorage.getItem('timer_running')) return;
 
-            // অ্যাড ওপেন করা
             window.open(ads[step], '_blank');
-
-            // টাইমার স্টার্ট এবং মেমোরিতে সেভ
             const endTime = Date.now() + 10000;
             localStorage.setItem('timer_end', endTime);
             localStorage.setItem('timer_v_id', v_id);
             localStorage.setItem('timer_running', 'true');
-            
             runTimerLogic();
         }
 
         function checkExistingTimer() {
-            if (localStorage.getItem('timer_running') === 'true') {
-                runTimerLogic();
-            }
+            if (localStorage.getItem('timer_running') === 'true') runTimerLogic();
         }
 
         function runTimerLogic() {
@@ -129,11 +145,9 @@
             const timeSpan = document.getElementById('time-left');
             const barFill = document.getElementById('bar-fill');
             const v_id = localStorage.getItem('timer_v_id');
-
             overlay.style.display = 'block';
 
             if (timerInterval) clearInterval(timerInterval);
-
             timerInterval = setInterval(() => {
                 const endTime = parseInt(localStorage.getItem('timer_end'));
                 const now = Date.now();
@@ -143,17 +157,12 @@
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     overlay.style.display = 'none';
-                    
-                    // ধাপ আপডেট
                     let step = getCurrentStep(v_id);
                     step++;
                     localStorage.setItem('step_' + v_id, step);
-                    
-                    // ক্লিনিং
                     localStorage.removeItem('timer_running');
                     localStorage.removeItem('timer_end');
                     localStorage.removeItem('timer_v_id');
-                    
                     renderUI();
                 } else {
                     timeSpan.innerText = timeLeft;
