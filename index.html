@@ -6,6 +6,9 @@
     <title>VAIRAL VIDEO - Sorted Panel</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         :root { --primary: #8e2de2; --secondary: #4a00e0; --bg: #f0f2f5; --white: #ffffff; }
         body { background: var(--bg); color: #222; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
@@ -81,7 +84,6 @@
             renderUI();
         }
 
-        // মূল সাজানোর লজিক
         function renderUI() {
             const container = document.getElementById('video-display');
             const searchInput = document.getElementById('videoSearch').value.toLowerCase();
@@ -125,7 +127,7 @@
                         <div class="thumb-box"><img src="${v.photo}"></div>
                         <div class="card-details">
                             <h3>${v.name}</h3>
-                            <button id="btn-${v.id}" class="${btnClass}" onclick='handleAdClick("${v.id}", ${JSON.stringify(v.ads)})'>${btnTxt}</button>
+                            <button id="btn-${v.id}" class="${btnClass}" onclick='handleAdClick("${v.id}", ${JSON.stringify(v.ads)}, "${v.name}")'>${btnTxt}</button>
                             <span style="display:block; margin-top:12px; font-weight:bold; color:#666;">
                                 ${step >= total ? '✅ আনলক সফল' : 'ধাপ: ' + step + '/' + total} | ${v.category || 'General'}
                             </span>
@@ -134,13 +136,27 @@
             });
         }
 
-        function handleAdClick(v_id, ads) {
+        // এলার্ট সিস্টেম সহ সংশোধিত ক্লিক লজিক
+        function handleAdClick(v_id, ads, v_name) {
             let step = getCurrentStep(v_id);
+            
+            // যদি ভিডিও অলরেডি আনলক হয়ে থাকে
             if (step >= ads.length) {
-                localStorage.setItem('expiry_' + v_id, Date.now() + (24 * 60 * 60 * 1000));
-                window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id;
+                // প্যানেলের সামনেই এলার্ট দেখাবে
+                Swal.fire({
+                    title: 'ইনবক্স চেক করুন!',
+                    text: `আপনি ইতিমধ্যে "${v_name}" ভিডিওটি পেয়েছেন। আপনার টেলিগ্রাম ইনবক্স চেক করুন। ২৪ ঘণ্টা পর আবার নতুন করে নিতে পারবেন।`,
+                    icon: 'info',
+                    confirmButtonText: 'ঠিক আছে',
+                    confirmButtonColor: '#4a00e0'
+                }).then((result) => {
+                    // এলার্ট দেখার পর বটে পাঠিয়ে দিবে
+                    localStorage.setItem('expiry_' + v_id, Date.now() + (24 * 60 * 60 * 1000));
+                    window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id;
+                });
                 return;
             }
+            
             if (localStorage.getItem('timer_running')) return;
 
             window.open(ads[step], '_blank');
