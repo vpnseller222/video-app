@@ -3,70 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAIRAL VIDEO - Premium Design</title>
+    <title>VAIRAL VIDEO - Premium</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        /* আপনার পছন্দের সুন্দর প্রিমিয়াম ডিজাইন */
         :root { --main-grad: linear-gradient(135deg, #8e2de2, #4a00e0); --bg: #f8f9fa; }
-        body { background: var(--bg); color: #333; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0; }
-        
-        /* উপরের সেই সুন্দর বেগুনি হেডার */
-        .header-section { background: var(--main-grad); padding: 50px 20px; text-align: center; color: white; border-radius: 0 0 40px 40px; box-shadow: 0 10px 30px rgba(74, 0, 224, 0.3); }
-        .header-section h1 { margin: 0; font-size: 30px; letter-spacing: 1px; }
-        .header-section p { font-size: 14px; opacity: 0.9; margin-top: 10px; }
-
-        /* সার্চ বার */
-        .search-area { margin: -30px 25px 25px 25px; position: relative; }
-        .search-input { width: 100%; padding: 18px 25px; border-radius: 50px; border: none; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-size: 16px; outline: none; box-sizing: border-box; }
-
-        /* ভিডিও কার্ড লিস্ট */
+        body { background: var(--bg); color: #333; font-family: sans-serif; margin: 0; padding: 0; }
+        .header-section { background: var(--main-grad); padding: 50px 20px; text-align: center; color: white; border-radius: 0 0 40px 40px; }
+        .header-section h1 { margin: 0; font-size: 28px; }
+        .search-area { margin: -30px 25px 25px 25px; }
+        .search-input { width: 100%; padding: 15px 20px; border-radius: 50px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-size: 16px; box-sizing: border-box; outline: none; }
         .main-content { padding: 20px; }
-        .card { background: white; border-radius: 25px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .thumb-box { width: 100%; height: 210px; background: #ddd; position: relative; }
+        .card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .thumb-box { width: 100%; height: 200px; }
         .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-        .card-details { padding: 20px; }
-        .card-details h3 { margin: 0; font-size: 19px; color: #222; }
-        .ad-info { color: #ff4757; font-size: 13px; font-weight: bold; margin: 10px 0; display: flex; align-items: center; gap: 5px; }
+        .card-details { padding: 15px; }
+        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; }
         
-        /* প্রিমিয়াম বাটন */
-        .unlock-btn { background: var(--main-grad); color: white; border: none; padding: 15px; width: 100%; border-radius: 15px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(74, 0, 224, 0.2); }
-        
-        /* অ্যাড লোডিং স্ক্রিন */
-        #ad-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; }
-        .timer-circle { width: 110px; height: 110px; border: 6px solid #4a00e0; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 45px; font-weight: bold; color: #4a00e0; margin-bottom: 30px; border-top-color: #eee; animation: spin 10s linear; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .ad-btn { background: #0088cc; color: white; padding: 18px 45px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 18px; display: none; }
+        /* Ad Overlay */
+        #ad-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .timer-circle { width: 100px; height: 100px; border: 5px solid #4a00e0; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 35px; font-weight: bold; color: #4a00e0; margin-bottom: 20px; }
+        .ad-go-btn { background: #0088cc; color: white; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
 
     <div class="header-section">
         <h1>All Video PLAY 🔞</h1>
-        <p>বিজ্ঞাপন দেখুন এবং ভিডিও সরাসরি ইনবক্সে পান।</p>
+        <p>ভিডিও সরাসরি ইনবক্সে পান।</p>
     </div>
 
     <div class="search-area">
         <input type="text" class="search-input" placeholder="🔍 ভিডিওর জন্য অনুসন্ধান করুন...">
     </div>
 
-    <div class="main-content">
-        <div id="video-display">লোডিং...</div>
-    </div>
+    <div class="main-content" id="video-display">লোডিং...</div>
 
     <div id="ad-view">
         <div class="timer-circle" id="timer">10</div>
-        <p id="ad-msg" style="color:#666; font-size: 18px;">বিজ্ঞাপন তৈরি হচ্ছে...</p>
-        <a href="#" id="ad-go-btn" class="ad-btn" target="_blank">বিজ্ঞাপনটি দেখুন</a>
+        <p id="ad-msg" style="padding: 0 20px;">বিজ্ঞাপন লোড হচ্ছে...</p>
+        <a href="#" id="ad-go-btn" class="ad-go-btn" target="_blank">বিজ্ঞাপনটি দেখুন</a>
     </div>
 
     <script>
-        // Firebase Setup
         const firebaseConfig = { databaseURL: "https://myvideobot-9f9ee-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ভিডিও ডাটা রেন্ডার
         db.ref('videos').on('value', (snap) => {
             const data = snap.val();
             const container = document.getElementById('video-display');
@@ -75,12 +58,11 @@
                 container.innerHTML += `
                     <div class="card">
                         <div class="thumb-box">
-                            <img src="${data[id].photo}" onerror="this.src='https://via.placeholder.com/400x220?text=No+Image'">
+                            <img src="${data[id].photo}" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
                         </div>
                         <div class="card-details">
                             <h3>${data[id].name}</h3>
-                            <div class="ad-info">🔞 ${data[id].ads.length} টি Ads দেখা আর ভিডিও দেখা</div>
-                            <button class="unlock-btn" onclick="openAd('${id}', ${JSON.stringify(data[id].ads)})">🔒 আনলক করুন (0/${data[id].ads.length})</button>
+                            <button class="unlock-btn" onclick="openAd('${id}', ${JSON.stringify(data[id].ads)})">🔒 আনলক করুন</button>
                         </div>
                     </div>`;
             }
@@ -98,55 +80,29 @@
             let time = 10;
             const timerObj = document.getElementById('timer');
             const msgObj = document.getElementById('ad-msg');
+            msgObj.innerText = "বিজ্ঞাপন লোড হচ্ছে...";
             
             const interval = setInterval(() => {
                 timerObj.innerText = time;
                 if (time <= 0) {
                     clearInterval(interval);
-                    msgObj.innerText = "নিচের বাটনে ক্লিক করুন";
+                    msgObj.innerText = "নিচের বাটনে ক্লিক করে বিজ্ঞাপনটি দেখুন";
                     const btn = document.getElementById('ad-go-btn');
                     btn.style.display = 'block';
                     btn.href = ads[step];
                     btn.onclick = () => {
                         step++;
-                        if (step < ads.length) { setTimeout(showAdScreen, 1500); }
-                        else { 
-                            msgObj.innerText = "ভিডিও আনলক হচ্ছে...";
-                            setTimeout(() => { window.location.href = `https://t.me/vairal_video18_bot?start=${v_id}`; }, 2000);
-                        }
-                    };
-                }
-                time--;
-            }, 1000);
-        }
-    </script>
-</body>
-</html>
-            document.getElementById('ad-msg').innerText = `বিজ্ঞাপন ${step + 1} লোড হচ্ছে...`;
-            
-            let timeLeft = 10;
-            const clock = setInterval(() => {
-                document.getElementById('timer').innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(clock);
-                    document.getElementById('ad-msg').innerText = "নিচের বাটনে ক্লিক করে বিজ্ঞাপনটি দেখুন";
-                    const btn = document.getElementById('ad-btn');
-                    btn.style.display = 'block';
-                    btn.href = currentAds[step];
-                    
-                    btn.onclick = () => {
-                        step++;
-                        if (step < currentAds.length) {
+                        if (step < ads.length) { 
                             setTimeout(showAdScreen, 1500); 
-                        } else {
-                            document.getElementById('ad-msg').innerText = "অভিনন্দন! ভিডিও আনলক হয়েছে।";
-                            setTimeout(() => {
-                                window.location.href = `https://t.me/vairal_video18_bot?start=${vId}`;
+                        } else { 
+                            msgObj.innerText = "ভিডিও আনলক হয়েছে!";
+                            setTimeout(() => { 
+                                window.location.href = "https://t.me/vairal_video18_bot?start=" + v_id; 
                             }, 2000);
                         }
                     };
                 }
-                timeLeft--;
+                time--;
             }, 1000);
         }
     </script>
